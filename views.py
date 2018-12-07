@@ -12,11 +12,11 @@ def blood_level(dose, halflife, start_level=0, days=200):
 
     # hf in days
     hf_days = halflife / 24
-    print(hf_days)
 
     # start at day 0
     day = 0
     levels = [level_0]
+    steady_state_days = 0
 
     # loop through days
     while day < days:
@@ -28,13 +28,25 @@ def blood_level(dose, halflife, start_level=0, days=200):
 
         # add the daily dose
         level += dose
+
         levels.append(level)
+
         # increase the day
         day += 1
 
         level_0 = level
 
-    return list(range(days+1)), levels
+    # figure out the time to steady state
+    prev_level = -10
+    for i, current_level in enumerate(levels):
+        print("Day:",i, "Diff:", current_level - prev_level)
+        if (current_level - prev_level) < 0.1:
+            steady_state_days = i
+            break
+
+        prev_level = current_level
+
+    return list(range(days+1)), levels, steady_state_days
 
 # Create your views here.
 def Index(request):
@@ -46,6 +58,6 @@ def Calculate(request):
     start_level = request.POST.get("start_level", 0)
     days = request.POST.get("days", 200)
 
-    days, levels = blood_level(float(daily_dose), float(halflife), float(start_level), int(days))
+    days, levels, ssd = blood_level(float(daily_dose), float(halflife), float(start_level), int(days))
 
-    return JsonResponse({'days': days, 'levels': levels}, safe=False)
+    return JsonResponse({'days': days, 'levels': levels, 'steady_state': ssd}, safe=False)

@@ -47,9 +47,23 @@
                 <hr>
 
                 <div class="row chart_container" id="charts" style="display: none;">
+                    <div class="col-md-12 text-center">
+                        <b>Days to Steady State:</b> <span id="ssd"></span>
+                        <br><br>
+                    </div>
                     <div class="col-md-12 chart_container">
                         <div id="summary_chart" class="chart_container" style="display: block;">
                             <canvas id="myChart" class="chart_container" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="well">
+                            <p>To use just enter the half-life of the medication in hours, the daily dose, the starting blood level (optional), and the number of days to model and click "Calculate". A chart will be displaying showing the blood levels on each day. </p>
+
+                            <p><b>Disclaimer:</b> This is for informational use only. The levels presented are merely estimates and should not be used for making any medical decisions. If you have any questions are concerns please consult a doctor.</p>
                         </div>
                     </div>
                 </div>
@@ -91,6 +105,8 @@
     }
 
     function display_chart(data){
+        $("#ssd").html(data.steady_state);
+
         ctx = clearChart();
 
         $("#charts").show();
@@ -99,9 +115,8 @@
             data: {
                 labels: data.days,
                 datasets: [{
-                    label: 'Level',
+                    label: 'Blood Level',
                     data: data.levels,
-                    label: 'mg',
                     yAxisID: 'A',
                     backgroundColor: [
                         'rgba(120, 99, 255, 0.1)',
