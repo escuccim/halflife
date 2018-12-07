@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}Half-Life Calculator{% endblock %}
+{% block meta_description %}{% trans "Calculate blood levels of medications" %}{% endblock %}
+
+{% block body %}
+    <div class="row">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3>Half-Life Blood Level Calculator</h3>
+            </div>
+            <div class="panel-body">
+                <form id="hl_form" action="{% url 'halflife:calculate' %}" method="POST" class="form form-horizontal">
+                    {% csrf_token %}
+                    <div class="row">
+                        <label class="control-label col-md-3">Half Life (in hours):</label>
+                        <div class="col-md-3">
+                            <input type="number" name="half_life" min="0" value="12">
+                        </div>
+
+                        <label class="control-label col-md-3">Daily Dose (in mgs):</label>
+                        <div class="col-md-3">
+                            <input type="number" name="daily_dose" min="0" value="10">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <label class="control-label col-md-3">Starting Level (in mgs):</label>
+                        <div class="col-md-3">
+                            <input type="number" name="start_level" min="0" value="0">
+                        </div>
+
+                        <label class="control-label col-md-3">Days to Model:</label>
+                        <div class="col-md-3">
+                            <input type="number" name="days" min="0" value="90">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 text-center">
+                            <button type="button" class="btn btn-primary" id="calculate">Calculate</button>
+                        </div>
+                    </div>
+                </form>
+
+                <hr>
+
+                <div class="row chart_container" id="charts" style="display: none;">
+                    <div class="col-md-12 chart_container">
+                        <div id="summary_chart" class="chart_container" style="display: block;">
+                            <canvas id="myChart" class="chart_container" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js"></script>
+<script>
+    $("#calculate").on("click", function(){
+        url = $("#hl_form").attr("action");
+        data = $("#hl_form").serialize();
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: data,
+            dataType: "json",
+            success: function(data) {
+                console.log(data);
+                display_chart(data);
+            },
+            error: function(err) {
+                console.log(err);
+            }
+        });
+    });
+
+    function clearChart() {
+        var parent = document.getElementById('summary_chart');
+        var child = document.getElementById('myChart');
+        parent.removeChild(child);
+        parent.innerHTML ='<canvas id="myChart" width="400" height="300"></canvas>';
+        ctx = document.getElementById("myChart").getContext('2d');
+        return ctx;
+    }
+
+    function display_chart(data){
+        ctx = clearChart();
+
+        $("#charts").show();
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.days,
+                datasets: [{
+                    label: 'Level',
+                    data: data.levels,
+                    label: 'mg',
+                    yAxisID: 'A',
+                    backgroundColor: [
+                        'rgba(120, 99, 255, 0.1)',
+                    ],
+                    borderColor: [
+                        'rgba(132,99,255,1)',
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  yAxes: [ {
+                    id: 'A',
+                    type: 'linear',
+                    position: 'left',
+                    ticks: {
+                        beginAtZero: true,
+                    },
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Blood Levels',
+                    }
+                  }]
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}
