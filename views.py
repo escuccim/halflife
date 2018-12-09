@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 from django.shortcuts import render
 from django.http import JsonResponse
 
-def blood_level(dose, halflife, start_level=0, days=200):
+def blood_level(dose, halflife, start_level=0):
     # starting level = 0
     level_0 = start_level
     # level after first dose = dose
@@ -16,10 +16,15 @@ def blood_level(dose, halflife, start_level=0, days=200):
     # start at day 0
     day = 0
     levels = [level_0]
-    steady_state_days = 0
+
+    keep_looping = True
+    stop_loop = False
 
     # loop through days
-    while day < days:
+    while keep_looping:
+        if stop_loop == True:
+            keep_looping = False
+
         # how much will the levels decrease today
         day_decrease = (level / 2) / hf_days
 
@@ -29,6 +34,13 @@ def blood_level(dose, halflife, start_level=0, days=200):
         # add the daily dose
         level += dose
 
+        # check difference between current level and previous
+        diff = abs(level - levels[-1])
+
+        # if the difference is less than 1% of the previous level we will say we've reached steady state
+        if diff < (levels[-1] * .001):
+            stop_loop = True
+
         levels.append(level)
 
         # increase the day
@@ -36,17 +48,7 @@ def blood_level(dose, halflife, start_level=0, days=200):
 
         level_0 = level
 
-    # figure out the time to steady state
-    prev_level = -10
-    for i, current_level in enumerate(levels):
-        print("Day:",i, "Diff:", current_level - prev_level)
-        if (current_level - prev_level) < 0.1:
-            steady_state_days = i
-            break
-
-        prev_level = current_level
-
-    return list(range(days+1)), levels, steady_state_days
+    return list(range(day)), levels, (day - 1)
 
 # Create your views here.
 def Index(request):
@@ -56,8 +58,9 @@ def Calculate(request):
     daily_dose = request.POST.get("daily_dose", 10)
     halflife = request.POST.get("half_life", 12)
     start_level = request.POST.get("start_level", 0)
-    days = request.POST.get("days", 200)
 
-    days, levels, ssd = blood_level(float(daily_dose), float(halflife), float(start_level), int(days))
+    days, levels, ssd = blood_level(float(daily_dose), float(halflife), float(start_level))
 
-    return JsonResponse({'days': days, 'levels': levels, 'steady_state': ssd}, safe=False)
+    steady_level = round(levels[-1], 1)
+
+    return JsonResponse({'days': days, 'levels': levels, 'steady_state': ssd, 'final_level': steady_level}, safe=False)
